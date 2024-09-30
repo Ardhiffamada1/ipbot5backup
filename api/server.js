@@ -1,8 +1,8 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-module.exports = async (req, res) => {
-  const ip = req.query.ip;
+export default async function handler(req, res) {
+  const { ip } = req.query;
 
   if (!ip) {
     return res.status(400).json({ error: 'IP address is required' });
@@ -17,8 +17,7 @@ module.exports = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
-
+}
 
 function extractData(html) {
   const $ = cheerio.load(html);
@@ -50,8 +49,14 @@ function extractData(html) {
     },
     domainNames: [],
     botStatus: [],
+    score: '',
     countryFlag: []
   };
+
+  const scoreMatch = $('pre').text().match(/"score":"(\d+)"/);
+  if (scoreMatch) {
+    data.score = scoreMatch[1];
+  }
 
   $('table tr').each((index, element) => {
     const th = $(element).find('th').text().trim();
@@ -125,7 +130,6 @@ function extractData(html) {
     data.botStatus.push('No');
   }
 
-  // Adding country flag URL
   const countryCode = data.location.countryCode.toLowerCase();
   const countryFlagURL = `https://flagcdn.com/${countryCode}.svg`;
   data.countryFlag.push(countryFlagURL);
